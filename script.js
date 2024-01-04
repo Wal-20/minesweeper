@@ -1,10 +1,9 @@
 let board = [];
 const dims = 16;    // for now, keep the rows the same as columns
-const arrsounds = ["hayate.mp3", "explosion.ogg", "ibrahim.mp3", "ringtone1.mp3", ""]
 const board_width_height = 40 * dims;
 
 // let mines_count = dims * 2 + 8;
-let mines_count = 50;
+let mines_count = 40;
 
 let mines_locations = [];
 let tilesCleared = 0; // click all tiles except the ones containing a bomb
