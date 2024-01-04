@@ -27,7 +27,7 @@ body {
     align-items: center;
 }
 
-#board div :not(.tiles-cleared):hover {
+#board :not(.tiles-cleared):hover {
     background-color: darkgray;
 }
 

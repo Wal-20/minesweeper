@@ -74,6 +74,9 @@ function clickTile() {
         }
         return;
     }
+    if(tile.innerText == "🚩") {
+        return 
+    }
     
     if(mines_locations.includes(tile.id)) {
         revealMines('red');
