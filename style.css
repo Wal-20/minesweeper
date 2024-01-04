@@ -7,7 +7,7 @@ body {
 }
 
 
-#board {
+.board {
     background-color: lightgray;
     border: 10px solid rgb(150, 148, 148);
     margin: auto;
@@ -15,7 +15,7 @@ body {
     flex-wrap: wrap;
 }
 
-#board div {
+.board div {
     width: 38px;
     height: 38px;       /* we subtract 2 so we leave 1px for the border on each side */
     border: 1px solid whitesmoke;
@@ -27,9 +27,14 @@ body {
     align-items: center;
 }
 
-#board :not(.tiles-cleared):hover {
+.board :not(.tiles-cleared):hover {
     background-color: darkgray;
 }
+
+.disabled {
+    background-color: darkgray;
+}
+
 
 .tiles-cleared {
     background-color: darkgray;

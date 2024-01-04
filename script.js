@@ -1,9 +1,11 @@
 let board = [];
 const dims = 16;    // for now, keep the rows the same as columns
-
+const arrsounds = ["hayate.mp3", "explosion.ogg", "ibrahim.mp3", "ringtone1.mp3", ""]
 const board_width_height = 40 * dims;
 
-let mines_count = dims * 2 + 8;
+// let mines_count = dims * 2 + 8;
+let mines_count = 50;
+
 let mines_locations = [];
 let tilesCleared = 0; // click all tiles except the ones containing a bomb
 
@@ -21,8 +23,8 @@ window.onload = function() {
 
 function startGame() {
 
-    document.getElementById('board').style.width = board_width_height + 'px';
-    document.getElementById('board').style.height = board_width_height + 'px';
+    document.querySelector('.board').style.width = board_width_height + 'px';
+    document.querySelector('.board').style.height = board_width_height + 'px';
     document.getElementById('mines-count').innerHTML = mines_count;
     document.getElementById('flag-button').addEventListener('click',toggleFlag);
     setMines();
@@ -34,7 +36,7 @@ function startGame() {
             let tile = document.createElement("div");
             tile.id = i + '-' + j;
             tile.addEventListener('click',clickTile);
-            document.getElementById('board').append(tile);
+            document.querySelector('.board').append(tile);
             row.push(tile);
         }
         board.push(row);
@@ -74,17 +76,17 @@ function clickTile() {
         }
         return;
     }
-    if(tile.innerText == "🚩") {
-        return 
-    }
-    
+    if(tile.innerText === "🚩")
+        return;
+
     if(mines_locations.includes(tile.id)) {
         revealMines('red');
-        document.getElementById('game-over').innerHTML = 'Game over!';
+        document.getElementById('game-over').innerHTML = "Game over!";
+        document.querySelector('.board').classList.add('disabled');
         gameOver = true;
         return;
     }
-    
+
     //checking nearby tiles for bombs
     let coords = tile.id.split('-');
     let row = parseInt(coords[0]);
@@ -135,7 +137,7 @@ function checkMines(row,column) {
     if(board[row][column].classList.contains('tiles-cleared')) {
         return;
     }
-
+    
     board[row][column].classList.add('tiles-cleared');
     board[row][column].innerText = ''; // incase a flag is placed on the tile
     tilesCleared++;
