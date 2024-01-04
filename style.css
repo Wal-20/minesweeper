@@ -1,0 +1,77 @@
+body {
+    font-family: 'Public Pixel', sans-serif;
+    font-weight: bold;
+    text-align: center;
+    user-select: none;
+    background-image: url('wallpaperflare.com_wallpaper.jpg');
+}
+
+
+#board {
+    background-color: lightgray;
+    border: 10px solid rgb(150, 148, 148);
+    margin: auto;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+#board div {
+    width: 38px;
+    height: 38px;       /* we subtract 2 so we leave 1px for the border on each side */
+    border: 1px solid whitesmoke;
+    
+    /* text */
+    font-size: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#board div :not(.tiles-cleared):hover {
+    background-color: darkgray;
+}
+
+.tiles-cleared {
+    background-color: darkgray;
+}
+
+.x1 { 
+    color: blue;
+}
+
+.x2 { 
+    color: green;
+}
+
+.x3 { 
+    color: red;
+}
+
+.x4 { 
+    color: navy;
+}
+
+.x5 { 
+    color: brown;
+}
+
+.x6 { 
+    color: teal;
+}
+
+.x7 { 
+    color: black;
+}
+
+.x8 { 
+    color: gray;
+}
+
+#flag-button {
+    width: 100px;
+    height: 53px;
+    font-size:30px;
+    background-color: lightgray;
+    border:2.6px solid darkgray;
+    cursor: pointer;
+}
