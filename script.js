@@ -1,5 +1,5 @@
 let board = [];
-const width = 30;    // for now, keep the rows the same as columns
+const width = 30;
 const height = 16;
 const board_width = 40 * width;
 const board_height = 40 * height;
