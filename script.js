@@ -1,10 +1,10 @@
 let board = [];
-const dims = 16;    // for now, keep the rows the same as columns
-const board_width_height = 40 * dims;
+const width = 30;    // for now, keep the rows the same as columns
+const height = 16;
+const board_width = 40 * width;
+const board_height = 40 * height;
 
-// let mines_count = dims * 2 + 8;
 let mines_count = 40;
-
 let mines_locations = [];
 let tilesCleared = 0; // click all tiles except the ones containing a bomb
 
@@ -22,16 +22,16 @@ window.onload = function() {
 
 function startGame() {
 
-    document.querySelector('.board').style.width = board_width_height + 'px';
-    document.querySelector('.board').style.height = board_width_height + 'px';
+    document.querySelector('.board').style.width = board_width + 'px';
+    document.querySelector('.board').style.height = board_height + 'px';
     document.getElementById('mines-count').innerHTML = mines_count;
     document.getElementById('flag-button').addEventListener('click',toggleFlag);
     setMines();
 
     // populate the board
-    for(let i = 0; i < dims;i++){
+    for(let i = 0; i < height;i++){
         let row = [];
-        for(let j = 0; j < dims;j++){
+        for(let j = 0; j < width;j++){
             let tile = document.createElement("div");
             tile.id = i + '-' + j;
             tile.addEventListener('click',clickTile);
@@ -47,9 +47,9 @@ function setMines() {
     let uniqueMines = new Set();
 
     while (uniqueMines.size < mines_count) {
-        let row = getRandomIndex(dims);
-        let column = getRandomIndex(dims);
-        let mineLocation = column + '-' + row;
+        let row = getRandomIndex(height);
+        let column = getRandomIndex(width);
+        let mineLocation = row + '-' + column;
 
         // Check if the mine location is unique
         if (!uniqueMines.has(mineLocation)) {
@@ -92,7 +92,7 @@ function clickTile() {
     let column = parseInt(coords[1]);
     checkMines(row,column);
 
-    if(tilesCleared === (dims * dims) - mines_count) {
+    if(tilesCleared === (width * height) - mines_count) {
         revealMines('lightgray');
         document.getElementById('game-over').innerHTML = 'You won!!';
         gameOver = true;
@@ -130,7 +130,7 @@ function revealMines(backgroundColor) {
 
 function checkMines(row,column) {
 
-    if(row < 0 || row >= dims || column < 0 || column >= dims) {
+    if(row < 0 || row >= height || column < 0 || column >= width) {
         return;
     }
     if(board[row][column].classList.contains('tiles-cleared')) {
@@ -176,7 +176,7 @@ function checkMines(row,column) {
 
 
 function checkTile(row,column) { 
-    if(row < 0 || row >= dims || column < 0 || column >= dims) {
+    if(row < 0 || row >= height || column < 0 || column >= width) {
         return 0;
     }
 
