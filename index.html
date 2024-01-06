@@ -11,14 +11,18 @@
     <script src="script.js"></script>
 </head>
 <body>
-    <h1>Mines: <span id="mines-count"></span></h1>
+    <h1 style="-webkit-text-stroke: .7px black;">Mines:<span id="mines-count"></span></h1>
     <div class="board">
     </div>
     
     <br>
-    <button id="flag-button">🚩</button>
+    <span>
+        <button id="flag-button">🚩</button>
+    </span>
+    <br><br>
+    <button id="restart-button" onclick="location.reload()">Reset</button>
 
     <br>
-    <h2 id="game-over"></h2>
+    <h2 id="game-over" style="-webkit-text-stroke: .7px black;"></h2>
 </body>
 </html>
