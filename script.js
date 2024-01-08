@@ -4,7 +4,7 @@ const height = 16;
 const board_width = 40 * width;
 const board_height = 40 * height;
 
-const mines_count = 50;
+const mines_count = 40;
 let mines_locations = [];
 let tilesCleared = 0; // click all tiles except the ones containing a bomb
 
@@ -61,7 +61,7 @@ function setMines() {
             mines_locations.push(mineLocation);
         }
     }
-    console.log('Mine locations: ',uniqueMines);
+    // console.log('Mine locations: ',uniqueMines);
 }
 
 
