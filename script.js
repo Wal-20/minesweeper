@@ -4,7 +4,7 @@ const height = 16;
 const board_width = 40 * width;
 const board_height = 40 * height;
 
-let mines_count = 40;
+const mines_count = 50;
 let mines_locations = [];
 let tilesCleared = 0; // click all tiles except the ones containing a bomb
 
@@ -26,7 +26,6 @@ function startGame() {
     document.querySelector('.board').style.height = board_height + 'px';
     document.getElementById('mines-count').innerHTML = mines_count;
     document.getElementById('flag-button').addEventListener('click',toggleFlag);
-    setMines();
 
     // populate the board
     for(let i = 0; i < height;i++){
@@ -35,6 +34,11 @@ function startGame() {
             let tile = document.createElement("div");
             tile.id = i + '-' + j;
             tile.addEventListener('click',clickTile);
+            tile.addEventListener('contextmenu',(event) => {
+                if(!gameOver && !board[i][j].classList.contains('tiles-cleared')) {
+                    event.preventDefault(); // Disable right-click context menu
+                    tile.innerText === '🚩' ? tile.innerText = '' : tile.innerText = '🚩';
+                }})
             document.querySelector('.board').append(tile);
             row.push(tile);
         }
@@ -57,7 +61,7 @@ function setMines() {
             mines_locations.push(mineLocation);
         }
     }
-    // console.log('Mine locations: ',uniqueMines);
+    console.log('Mine locations: ',uniqueMines);
 }
 
 
@@ -140,7 +144,10 @@ function checkMines(row,column) {
     board[row][column].classList.add('tiles-cleared');
     board[row][column].innerText = ''; // incase a flag is placed on the tile
     tilesCleared++;
-    
+    if(tilesCleared === 1) {
+        setMines();
+    }
+
     let minesFound = 0;
     
     //check in all directions
