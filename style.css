@@ -9,24 +9,50 @@ body {
 
 .board {
     background-color: lightgray;
-    border: 10px solid rgb(150, 148, 148);
+    border: 8px solid rgb(150, 148, 148);
     margin: auto;
     display: flex;
     flex-wrap: wrap;
+    box-sizing: border-box;
 }
 
 .board div {
-    width: 38px;
-    height: 38px;
-    border: 1px solid whitesmoke;
-    font-size: 25px;
+    width: 29px;
+    height: 29px;
+    border: 0.01px solid whitesmoke;
+    font-size: 18px;
     display: flex;
     justify-content: center;
     align-items: center;
+    box-sizing: border-box;
+}
+
+#flag-button {
+    width: 130px;
+    height: 50px;
+    font-size: 25px;
+    background-color: lightgray;
+    border: 2px solid darkgray;
+    cursor: pointer;
+}
+
+#restart-button, #computer-play {
+    width: 170px;
+    height: 50px;
+    font-size: 17px;
+    background-color: lightgray;
+    border: 2px solid darkgray;
+    cursor: pointer;
+    font-family: 'Public Pixel', sans-serif;
+    color: black;
 }
 
 
 .board :not(.tiles-cleared):hover {
+    background-color: darkgray;
+}
+
+#computer-play:hover, #restart-button:hover {
     background-color: darkgray;
 }
 
@@ -70,26 +96,4 @@ body {
     color: gray;
 }
 
-#flag-button {
-    width: 100px;
-    height: 53px;
-    font-size: 30px;
-    background-color: lightgray;
-    border: 2.6px solid darkgray;
-    cursor: pointer;
-}
 
-#restart-button, #computer-play {
-    width: 200px;
-    height: 56px;
-    font-size: 20px;
-    background-color: lightgray;
-    border: 2.6px solid darkgray;
-    cursor: pointer;
-    font-family: 'Public Pixel', sans-serif;
-    color: black;
-}
-
-#computer-play:hover, #restart-button:hover {
-    background-color: darkgray;
-}
