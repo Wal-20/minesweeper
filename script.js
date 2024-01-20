@@ -5,12 +5,9 @@ const board_width = 30 * width - 14;
 const board_height = 30 * height;
 
 const mines_count = 50;
-let mines_locations = [];
-let tilesCleared = 0; // click all tiles except the ones containing a bomb
-
-let flagEnabled = false;
+let mine_locations = new Set();
+let tilesCleared = 0;
 let gameOver = false;
-
 
 function getRandomIndex(max) {
     return Math.floor(Math.random() * max);
@@ -20,14 +17,19 @@ window.onload = function() {
     startGame();
 }
 
+
 function startGame() {
 
     document.querySelector('.board').style.width = board_width + 'px';
     document.querySelector('.board').style.height = board_height + 'px';
     document.getElementById('mines-count').innerHTML = mines_count;
     document.getElementById('computer-play').addEventListener('click',computerMove);
-    
-    
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'c' || event.key === ' ') {
+            computerMove();
+        }
+    });
+     
     // populate the board
     for(let i = 0; i < height;i++){
         let row = [];
@@ -54,20 +56,14 @@ function startGame() {
 
 
 function setMines() {
-    let uniqueMines = new Set();
 
-    while (uniqueMines.size < mines_count) {
+    while (mine_locations.size < mines_count) {
         let row = getRandomIndex(height);
         let column = getRandomIndex(width);
         let mineLocation = row + '-' + column;
 
-        // Check if the mine location is unique
-        if (!uniqueMines.has(mineLocation)) {
-            uniqueMines.add(mineLocation);
-            mines_locations.push(mineLocation);
-        }
+        mine_locations.add(mineLocation);
     }
-    // console.log('Mine locations: ',uniqueMines);
 }
 
 
@@ -78,14 +74,14 @@ function clickTile(tileRow,tileColumn) {
     if(tile.innerText === "🚩")
     return;
 
-    if(mines_locations.includes(tile.id)) {
+    if(mine_locations.has(tile.id)) {
         revealMines('red');
         document.getElementById('game-over').innerHTML = "Game over!";
         document.querySelector('.board').classList.add('disabled');
         gameOver = true;
         tile.style.backgroundColor = 'green';
         return;
-    }
+    }   
 
     //checking nearby tiles for bombs
     let coords = tile.id.split('-');
@@ -98,18 +94,13 @@ function clickTile(tileRow,tileColumn) {
         revealMines('lightgray');
         document.getElementById('game-over').innerHTML = 'You won!!';
         gameOver = true;
-        return;
     }
 }
 
 
 function revealMines(backgroundColor) {
 
-    for (let i = 0; i < mines_count; i++) {
-        let mineCoordinates = mines_locations[i].split('-');
-        let row = mineCoordinates[0];
-        let column = mineCoordinates[1];
-        let tileID = row + '-' + column;
+    for (const tileID of mine_locations) {
         document.getElementById(tileID).innerHTML = "💣";
         document.getElementById(tileID).style.backgroundColor = backgroundColor;
     }
@@ -125,8 +116,14 @@ function checkMines(row,column) {
         return;
     }
     
+    if (safeTiles.includes(row + '-' + column) || bombsConfirmed.has(row + '-' + column)) {
+        const indexToRemove = safeTiles.indexOf(row + '-' + column);
+        safeTiles.splice(indexToRemove, 1);
+    }
+    
+
     board[row][column].classList.add('tiles-cleared');
-    board[row][column].innerText = ''; // incase a flag is placed on the tile
+    board[row][column].innerText = ''; // in case a flag is placed on the tile
     tilesCleared++;
     
     if(tilesCleared === 1) {
@@ -176,85 +173,60 @@ function checkTile(row,column) {
         return 0;
     }
 
-    if(mines_locations.includes(row + '-' + column)) {
+    if(mine_locations.has(row + '-' + column)) {
         return 1;
     }
 
     return 0;
 }   
 
-//---------------------------------------------------------------------------------- COMPUTER MOVE ---------------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------- COMPUTER MOVE ----------------------------------------------------------------------------- //
 
 let bombsConfirmed = new Set(); // push confirmed tile IDs to this set
+let tileScores = new Map();
 let safeTiles = [];
 
-let tileScores = new Map();
-
-// we want to search the surrounding tiles for all cleared tiles, if the score == surrounding uncleared tiles, we can confirm those tiles as mines
+// we want to search the surrounding tiles for all uncleared tiles, if the score == surrounding uncleared tiles, we can confirm those tiles are mines
 
 function subtractScore(row, column) {
-    if(bombsConfirmed.has(row + '-' + column)) return;
+    const directions = [-1, 0, 1];
 
     bombsConfirmed.add(row + '-' + column);
-    // subtract score of surrounding tiles
-    if (row - 1 > -1) {
-        const tileScore = tileScores.get((row - 1) + '-' + column);
-        tileScores.set((row - 1) + '-' + column, tileScore - 1);
-    }
 
-    if (row + 1 < height) {
-        const tileScore = tileScores.get((row + 1) + '-' + column);
-        tileScores.set((row + 1) + '-' + column, tileScore - 1);
-    }
+    // Subtract score of surrounding tiles
+    directions.forEach((rOffset) => {
+        directions.forEach((cOffset) => {
+            const r = row + rOffset;
+            const c = column + cOffset;
 
-    if (column - 1 > -1) {
-        const tileScore = tileScores.get(row + '-' + (column - 1));
-        tileScores.set(row + '-' + (column - 1), tileScore - 1);
-    }
+            if (r >= 0 && r < height && c >= 0 && c < width) {
+                const tileID = r + '-' + c;
+                const tileScore = tileScores.get(tileID);
+                tileScores.set(tileID, tileScore - 1);
 
-    if (column + 1 < width) {
-        const tileScore = tileScores.get(row + '-' + (column + 1));
-        tileScores.set(row + '-' + (column + 1), tileScore - 1);
-    }
-
-    if (column + 1 < width && row - 1 > -1) {
-        const tileScore = tileScores.get((row - 1) + '-' + (column + 1));
-        tileScores.set((row - 1) + '-' + (column + 1), tileScore - 1);
-    }
-
-    if (column - 1 > -1 && row - 1 > -1) {
-        const tileScore = tileScores.get((row - 1) + '-' + (column - 1));
-        tileScores.set((row - 1) + '-' + (column - 1), tileScore - 1);
-    }
-
-    if (column - 1 > -1 && row + 1 < height) {
-        const tileScore = tileScores.get((row + 1) + '-' + (column - 1));
-        tileScores.set((row + 1) + '-' + (column - 1), tileScore - 1);
-    }
-
-    if (column + 1 < width && row + 1 < height) {
-        const tileScore = tileScores.get((row + 1) + '-' + (column + 1));
-        tileScores.set((row + 1) + '-' + (column + 1), tileScore - 1);
-    }
+                if(tileScores.get(tileID) === 0) {
+                     // add all tiles that aren't bombs to safeTiles
+                    let surroundingTiles = getSurroundingTiles(r,c);
+                    for(const tile of surroundingTiles) {
+                        let [surroundingRow,surroundingColumn] = tile.split('-').map(Number);
+                        if (!bombsConfirmed.has(tile) && !safeTiles.includes(tile) && !board[surroundingRow][surroundingColumn].classList.contains('tiles-cleared')) 
+                            safeTiles.push(tile);
+                    }
+                }
+            }
+        });
+    });
 }
-
 // when a bomb is confirmed subtract 1 from the score of all surrounding cleared tiles
 
 
 function evaluateSurroundingTiles(row, column) {
     let unsafeTiles = new Set(); // if surrounding tiles are more than that tile's score, add them here
-    let surroundingUncleared = 0;
 
     const addTileToUnsafe = (r, c) => {
-        const tileId = r + '-' + c;
+        const tileID = r + '-' + c;
         if (r >= 0 && r < height && c >= 0 && c < width && !board[r][c].classList.contains('tiles-cleared')) {
-            if(!bombsConfirmed.has(tileId)) {
-                unsafeTiles.add(tileId);
-                surroundingUncleared++;
-            }
-            else {
-                subtractScore(r,c);
-            }
+            unsafeTiles.add(tileID);
         }
     };
 
@@ -269,25 +241,13 @@ function evaluateSurroundingTiles(row, column) {
 
     const tileScore = tileScores.get(row + '-' + column);
 
-    if (surroundingUncleared === tileScore && tileScore !== 0) {
+    if (unsafeTiles.size === tileScore && tileScore > 0) {    // if number of surrounding uncleared tiles == the tile's score and that tile's score > 0
         // grab all surrounding uncleared tiles and add them to bombsConfirmed
-        console.log('Grab all surrounding uncleared tiles and add them to bombsConfirmed triggered by ' + row + '-' + column);
         for (let tileId of unsafeTiles) {
             let [r, c] = tileId.split('-').map(Number);
             subtractScore(r, c);
         }
-        unsafeTiles.clear();
     } 
-    else if (tileScore <= 0 && surroundingUncleared > 0) {
-        // clear all tiles that are not bombs
-        console.log('Clearing all tiles not bombs triggered by ' + row + '-' + column);
-        for (let tileId of unsafeTiles) {
-            if (!bombsConfirmed.has(tileId)) {
-                safeTiles.push(tileId);
-            }
-        }
-        unsafeTiles.clear();
-    }
 }
 
 function computerMove() {
@@ -295,60 +255,39 @@ function computerMove() {
     if(gameOver) return;
 
     if (safeTiles.length > 0) {
-        safeTiles.sort((a, b) => b.value - a.value);   // sort scores in reverse, prioritizing clearing tiles with the least scores
-        let tileID = safeTiles.pop().split('-');
-        let row = parseInt(tileID[0]);
-        let column = parseInt(tileID[1]);
+        safeTiles.sort((a,b) => tileScores.get(b) - tileScores.get(a)); // sort safe tile scores in descending order, giving priority to tiles with least scores
+        let tileID = safeTiles.pop();
+        let [row,column] = tileID.split('-').map(Number);
         clickTile(row, column);
+        console.log(row + '-' + column + " popped from safeTiles")
     } 
 
     else {
         let row = getRandomIndex(height);
         let column = getRandomIndex(width);
-        while(board[row][column].classList.contains('tiles-cleared')) {
+        while(board[row][column].classList.contains('tiles-cleared') || bombsConfirmed.has(row + '-' + column)) {
             row = getRandomIndex(height);
             column = getRandomIndex(width);
         }
+        console.log(row + '-' + column + ' randomly clicked')
         clickTile(row, column);
     }
 }
 
 
+function getSurroundingTiles(row,column) {
+    let surroundingTiles = [];
+    const directions = [-1,0,1];
 
+    directions.forEach((rOffset) => {
+        directions.forEach((cOffset) => {
+            const r = row + rOffset;
+            const c = column + cOffset;
 
-// function getSurroundingTiles(row,column) {
-//     let surroundingTiles = [];
-//     if(row - 1 > -1) {
-//         surroundingTiles.push(row - 1 + '-' + column);
-//     }
-    
-//     if(row + 1 < height) {
-//         surroundingTiles.push(row + 1 + '-' + column);
-//     }
-
-//     if(column - 1 > -1) {
-//         surroundingTiles.push(row + '-' + column - 1);
-//     }
-    
-//     if(column + 1 < width) {
-//         surroundingTiles.push(row + '-' + column + 1);
-//     }
-
-//     if(column + 1 < width && row - 1 > -1) {
-//         surroundingTiles.push(row - 1 + '-' + column + 1);
-//     }
-    
-//     if(column - 1 > -1 && row - 1 > -1) {
-//         surroundingTiles.push(row - 1 + '-' + column - 1);
-//     }
-
-//     if(column - 1 > -1 && row + 1 > -1) {
-//         surroundingTiles.push(row + 1 + '-' + column - 1);
-//     }
-
-//     if(column + 1 < width && row + 1 < height) {
-//         surroundingTiles.push(row + 1 + '-' + column + 1);
-//     }
-//     return surroundingTiles;
-// }
-
+            if (r >= 0 && r < height && c >= 0 && c < width) {
+                surroundingTiles.push(r + '-' + c);        
+            }
+        });
+    });
+    return surroundingTiles;
+}
