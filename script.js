@@ -7,7 +7,14 @@ const board_height = 30 * height;
 const mines_count = 50;
 let mine_locations = new Set();
 let tilesCleared = 0;
-let gameOver = false;
+let game_over = false;
+
+// algorithm specific variables
+let minesConfirmed = new Set();
+let tileScores = new Map(); // used to map each tile id with it's score, later used for evaluating number of surrounding mines
+let safeTiles = [];
+
+const directions = [-1, 0, 1]; // used as offsets for tile positions
 
 function getRandomIndex(max) {
     return Math.floor(Math.random() * max);
@@ -24,11 +31,6 @@ function startGame() {
     document.querySelector('.board').style.height = board_height + 'px';
     document.getElementById('mines-count').innerHTML = mines_count;
     document.getElementById('computer-play').addEventListener('click',computerMove);
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'c' || event.key === ' ') {
-            computerMove();
-        }
-    });
      
     // populate the board
     for(let i = 0; i < height;i++){
@@ -37,11 +39,11 @@ function startGame() {
             let tile = document.createElement("div");
             tile.id = i + '-' + j;
             tile.addEventListener('click',() => {
-                clickTile(parseInt(i),parseInt(j));
-                console.log(tileScores.get(i + '-' + j));
+                clickTile(i,j);
+                console.log('Score: ' + tileScores.get(i + '-' + j) + ' | bomb? ' + minesConfirmed.has(i + '-' + j));
             });
             tile.addEventListener('contextmenu',(event) => {
-                if(!gameOver && !board[i][j].classList.contains('tiles-cleared')) {
+                if(!game_over && !board[i][j].classList.contains('tiles-cleared')) {
                     event.preventDefault(); // Disable right-click context menu
                     tile.innerText === '🚩' ? tile.innerText = '' : tile.innerText = '🚩';
                 }
@@ -67,42 +69,42 @@ function setMines() {
 }
 
 
+function revealMines(backgroundColor) {
+
+    for (const tileID of mine_locations) {
+        document.getElementById(tileID).innerHTML = "💣";
+        document.getElementById(tileID).style.backgroundColor = backgroundColor;
+    }
+}
+
+
 function clickTile(tileRow,tileColumn) {
-    if(gameOver) return;
+    if(game_over) return;
     const tile = document.getElementById(tileRow + '-' + tileColumn);
     
     if(tile.innerText === "🚩")
-    return;
+        return;
 
     if(mine_locations.has(tile.id)) {
         revealMines('red');
         document.getElementById('game-over').innerHTML = "Game over!";
         document.querySelector('.board').classList.add('disabled');
-        gameOver = true;
-        tile.style.backgroundColor = 'green';
+        game_over = true;
+        tile.style.backgroundColor = 'green'; // for debugging stop sweating
         return;
     }   
 
     //checking nearby tiles for bombs
-    let coords = tile.id.split('-');
-    let row = parseInt(coords[0]);
-    let column = parseInt(coords[1]);
+    let coords = tile.id.split('-').map(Number);
+    let row = coords[0];
+    let column = coords[1];
     checkMines(row,column);
     console.log('safe tiles: ' + safeTiles.length);
 
     if(tilesCleared === (width * height) - mines_count) {
         revealMines('lightgray');
         document.getElementById('game-over').innerHTML = 'You won!!';
-        gameOver = true;
-    }
-}
-
-
-function revealMines(backgroundColor) {
-
-    for (const tileID of mine_locations) {
-        document.getElementById(tileID).innerHTML = "💣";
-        document.getElementById(tileID).style.backgroundColor = backgroundColor;
+        game_over = true;
     }
 }
 
@@ -116,12 +118,11 @@ function checkMines(row,column) {
         return;
     }
     
-    if (safeTiles.includes(row + '-' + column) || bombsConfirmed.has(row + '-' + column)) {
+    if (safeTiles.includes(row + '-' + column) || minesConfirmed.has(row + '-' + column)) {
         const indexToRemove = safeTiles.indexOf(row + '-' + column);
         safeTiles.splice(indexToRemove, 1);
     }
     
-
     board[row][column].classList.add('tiles-cleared');
     board[row][column].innerText = ''; // in case a flag is placed on the tile
     tilesCleared++;
@@ -133,23 +134,26 @@ function checkMines(row,column) {
     let minesFound = 0;
     
     //check in all directions
-    minesFound += checkTile(row - 1,column);
-    minesFound += checkTile(row - 1,column + 1);
-    minesFound += checkTile(row - 1,column - 1);
+    minesFound += countMines(row - 1,column);
+    minesFound += countMines(row - 1,column + 1);
+    minesFound += countMines(row - 1,column - 1);
 
-    minesFound += checkTile(row,column + 1);
-    minesFound += checkTile(row,column - 1);
+    minesFound += countMines(row,column + 1);
+    minesFound += countMines(row,column - 1);
 
-    minesFound += checkTile(row + 1,column);
-    minesFound += checkTile(row + 1,column - 1);
-    minesFound += checkTile(row + 1,column + 1);
+    minesFound += countMines(row + 1,column);
+    minesFound += countMines(row + 1,column - 1);
+    minesFound += countMines(row + 1,column + 1);
 
     if(minesFound > 0) {
         board[row][column].innerText = minesFound;
         board[row][column].classList.add('x' + minesFound);
+        board[row][column].classList.add('surrounded-by-mines');
         tileScores.set(row + '-' + column, minesFound);
-        evaluateSurroundingTiles(row,column);
-        // Here we want to evaluate adjacent bombs
+        setTimeout(() => {
+            evaluateSurroundingTiles(row,column); 
+        }, 100);
+        // Here we want to evaluate adjacent bombs, timeout is because not all tiles are evaluated when this is called, so we don't have the full picture
     }
 
     else {
@@ -168,7 +172,8 @@ function checkMines(row,column) {
 }
 
 
-function checkTile(row,column) { 
+function countMines(row,column) { 
+    
     if(row < 0 || row >= height || column < 0 || column >= width) {
         return 0;
     }
@@ -181,83 +186,77 @@ function checkTile(row,column) {
 }   
 
 // ----------------------------------------------------------------------------- COMPUTER MOVE ----------------------------------------------------------------------------- //
-
-let bombsConfirmed = new Set(); // push confirmed tile IDs to this set
-let tileScores = new Map();
-let safeTiles = [];
-
+// AKA: recursion hell
 // we want to search the surrounding tiles for all uncleared tiles, if the score == surrounding uncleared tiles, we can confirm those tiles are mines
 
 function subtractScore(row, column) {
-    const directions = [-1, 0, 1];
 
-    bombsConfirmed.add(row + '-' + column);
+    minesConfirmed.add(row + '-' + column);
+    
+    if (safeTiles.includes(row + '-' + column)) {
+        const indexToRemove = safeTiles.indexOf(row + '-' + column);
+        safeTiles.splice(indexToRemove, 1);
+    }
+    let tilesSurroundingMine = getSurroundingTiles(row,column);
 
     // Subtract score of surrounding tiles
-    directions.forEach((rOffset) => {
-        directions.forEach((cOffset) => {
-            const r = row + rOffset;
-            const c = column + cOffset;
+    for(const surroundingTileID of tilesSurroundingMine) {
+        
+        const tileScore = tileScores.get(surroundingTileID);
+        if(tileScore > 0) tileScores.set(surroundingTileID, tileScore - 1);
+        
+        const [r,c] = surroundingTileID.split('-').map(Number);
+        let surroundingTiles = new Set(getSurroundingTiles(r,c));
+        surroundingTiles.delete(row,column);
 
-            if (r >= 0 && r < height && c >= 0 && c < width) {
-                const tileID = r + '-' + c;
-                const tileScore = tileScores.get(tileID);
-                tileScores.set(tileID, tileScore - 1);
-
-                if(tileScores.get(tileID) === 0) {
-                     // add all tiles that aren't bombs to safeTiles
-                    let surroundingTiles = getSurroundingTiles(r,c);
-                    for(const tile of surroundingTiles) {
-                        let [surroundingRow,surroundingColumn] = tile.split('-').map(Number);
-                        if (!bombsConfirmed.has(tile) && !safeTiles.includes(tile) && !board[surroundingRow][surroundingColumn].classList.contains('tiles-cleared')) 
-                            safeTiles.push(tile);
-                    }
-                }
+        if(tileScores.get(surroundingTileID) === 0 && board[r][c].classList.contains('surrounded-by-mines')) {  // if after the subtraction a tile has a score of zero, all surrounding bombs are found, so all other tiles are safe
+            // add all tiles that aren't bombs to safeTiles
+            for(const tileID of surroundingTiles) {
+                let [surroundingRow,surroundingColumn] = tileID.split('-').map(Number);
+                if (!minesConfirmed.has(tileID) && !safeTiles.includes(tileID) && !board[surroundingRow][surroundingColumn].classList.contains('tiles-cleared')) 
+                    safeTiles.push(tileID);
             }
-        });
-    });
+        }
+
+    }
 }
 // when a bomb is confirmed subtract 1 from the score of all surrounding cleared tiles
 
 
 function evaluateSurroundingTiles(row, column) {
-    let unsafeTiles = new Set(); // if surrounding tiles are more than that tile's score, add them here
+    let unsafeTiles = new Set();
+    const surroundingTiles = getSurroundingTiles(row,column);
 
-    const addTileToUnsafe = (r, c) => {
-        const tileID = r + '-' + c;
-        if (r >= 0 && r < height && c >= 0 && c < width && !board[r][c].classList.contains('tiles-cleared')) {
+    surroundingTiles.forEach((tileID) => {
+        const [r,c] = tileID.split('-').map(Number);
+        if (!board[r][c].classList.contains('tiles-cleared')) {
             unsafeTiles.add(tileID);
         }
-    };
-
-    addTileToUnsafe(row - 1, column);
-    addTileToUnsafe(row + 1, column);
-    addTileToUnsafe(row, column - 1);
-    addTileToUnsafe(row, column + 1);
-    addTileToUnsafe(row - 1, column + 1);
-    addTileToUnsafe(row - 1, column - 1);
-    addTileToUnsafe(row + 1, column - 1);
-    addTileToUnsafe(row + 1, column + 1);
+    });
 
     const tileScore = tileScores.get(row + '-' + column);
 
     if (unsafeTiles.size === tileScore && tileScore > 0) {    // if number of surrounding uncleared tiles == the tile's score and that tile's score > 0
-        // grab all surrounding uncleared tiles and add them to bombsConfirmed
-        for (let tileId of unsafeTiles) {
-            let [r, c] = tileId.split('-').map(Number);
-            subtractScore(r, c);
+        // grab all surrounding uncleared tiles and add them to minesConfirmed
+        for (let tileID of unsafeTiles) {
+            let [r, c] = tileID.split('-').map(Number);
+            subtractScore(r,c);
+            unsafeTiles.delete(tileID);
         }
-    } 
+    }
+   
 }
+
 
 function computerMove() {
 
-    if(gameOver) return;
+    if(game_over) return;
 
     if (safeTiles.length > 0) {
-        safeTiles.sort((a,b) => tileScores.get(b) - tileScores.get(a)); // sort safe tile scores in descending order, giving priority to tiles with least scores
-        let tileID = safeTiles.pop();
-        let [row,column] = tileID.split('-').map(Number);
+        safeTiles.sort((a,b) => tileScores.get(b) - tileScores.get(a));
+        let tileID = safeTiles.pop(); // giving priority for tiles with the least scores
+
+        let [row,column] = tileID.split('-');
         clickTile(row, column);
         console.log(row + '-' + column + " popped from safeTiles")
     } 
@@ -265,19 +264,24 @@ function computerMove() {
     else {
         let row = getRandomIndex(height);
         let column = getRandomIndex(width);
-        while(board[row][column].classList.contains('tiles-cleared') || bombsConfirmed.has(row + '-' + column)) {
+        while(board[row][column].classList.contains('tiles-cleared') || minesConfirmed.has(row + '-' + column) && board[row][column].innerText === '🚩') {
             row = getRandomIndex(height);
             column = getRandomIndex(width);
         }
         console.log(row + '-' + column + ' randomly clicked')
         clickTile(row, column);
     }
+
+    if(!game_over)
+        for(const mineID of minesConfirmed) {
+            const [r,c] = mineID.split('-');
+            board[r][c].innerText = '🚩';
+        } 
 }
 
 
 function getSurroundingTiles(row,column) {
     let surroundingTiles = [];
-    const directions = [-1,0,1];
 
     directions.forEach((rOffset) => {
         directions.forEach((cOffset) => {
