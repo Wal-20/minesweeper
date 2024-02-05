@@ -10,13 +10,16 @@
     </style>
     <script src="script.js"></script>
 </head>
+
 <body>
     <h1 style="-webkit-text-stroke: .7px black;">Mines:<span id="mines-count"></span></h1>
     <div class="board"></div>
     <br>
     
-    <br><br>
-
+    <div style="-webkit-text-stroke: .7px black;">
+        <h2>🚩x<span id="flag-count"></span></h2>
+    </div>
+    
     <span>
         <button id="computer-play">Comp move</button>
         <button id="restart-button" onclick="location.reload()">Reset</button>

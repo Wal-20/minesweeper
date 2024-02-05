@@ -5,7 +5,8 @@ const board_width = (30 * width - 14) + 'px';
 const board_height = (30 * height) + 'px';
 
 let mine_locations = new Set();
-const mines_count = 30;
+const mines_count = 40;
+let flag_count = 0;
 
 let tilesClearedSet = new Set();
 let tilesClearedCount = 0;
@@ -28,17 +29,21 @@ window.onload = function() {
 
 
 function startGame() {
-
+    
     document.querySelector('.board').style.width = board_width;
     document.querySelector('.board').style.height = board_height;
     document.getElementById('mines-count').innerHTML = mines_count;
+    document.getElementById('flag-count').innerHTML = flag_count;
     document.getElementById('computer-play').addEventListener('click',computerSolve);
     document.addEventListener('keydown', function(event) {
         if (event.key === 'c' || event.key === ' ') {
             computerSolve();
         }
     });
-     
+    window.addEventListener('contextmenu',(event) => {
+        event.preventDefault(); // Disable right-click context menu
+    });
+
     // populate the board
     for(let i = 0; i < height;i++){
         let row = [];
@@ -49,13 +54,20 @@ function startGame() {
 
             tile.addEventListener('click',() => {
                 clickTile(i,j);
-                console.log('Score: ' + tileScores.get(i + '-' + j) + ' | bomb? ' + minesConfirmed.has(i + '-' + j));
+                console.log('Score: ' + tileScores.get(i + '-' + j) + ' | bomb? ' + minesConfirmed.has(i + '-' + j) + ' | safe? ' + safeTiles.includes(i + '-' + j));
             });
 
-            tile.addEventListener('contextmenu',(event) => {
+            tile.addEventListener('contextmenu',() => {
                 if(!game_over && !board[i][j].classList.contains('tiles-cleared')) {
-                    event.preventDefault(); // Disable right-click context menu
-                    tile.innerText === '🚩' ? tile.innerText = '' : tile.innerText = '🚩';
+                    if(tile.innerText === '🚩') {
+                        tile.innerText = '';
+                        flag_count--;
+                    }
+                    else {
+                        tile.innerText = '🚩';
+                        flag_count++;
+                    }
+                    document.getElementById('flag-count').innerHTML = flag_count;
                 }
             });
 
@@ -138,7 +150,14 @@ function checkMines(row,column) {
     }
     
     board[row][column].classList.add('tiles-cleared');
-    board[row][column].innerText = ''; // in case a flag is placed on the tile
+
+    if(board[row][column].innerText === '🚩') {
+        flag_count--;
+        document.getElementById('flag-count').innerText = flag_count;
+        board[row][column].innerText = '';
+    }
+    // in case a flag is placed on the tile
+
     tilesClearedCount++;
     
     if(tilesClearedCount === 1) {
@@ -161,7 +180,13 @@ function checkMines(row,column) {
         board[row][column].innerText = minesFound;
         board[row][column].classList.add('x' + minesFound);
         board[row][column].classList.add('surrounded-by-mines');
-        tileScores.set(row + '-' + column, minesFound);
+        const surroundingTiles = getSurroundingTiles(row,column);
+        
+        let surroundingMineCount = 0;
+        for(tileID of surroundingTiles) {
+            if(minesConfirmed.has(tileID)) surroundingMineCount++;
+        }
+        tileScores.set(row + '-' + column, minesFound - surroundingMineCount);
     }
 
     else {
@@ -187,6 +212,8 @@ function checkMines(row,column) {
 
 function subtractScore(row, column) {
 
+    if(minesConfirmed.has(row + '-' + column)) return;
+
     minesConfirmed.add(row + '-' + column);
     
     if (safeTiles.includes(row + '-' + column)) {
@@ -202,6 +229,8 @@ function subtractScore(row, column) {
         if(tileScore > 0) tileScores.set(surroundingTileID, tileScore - 1);
         
         const [r,c] = surroundingTileID.split('-').map(Number);
+        evaluateSurroundingTiles(r,c)
+
         let surroundingTiles = new Set(getSurroundingTiles(r,c));
         surroundingTiles.delete(row,column);
 
@@ -238,6 +267,7 @@ function evaluateSurroundingTiles(row, column) {
             subtractScore(r,c);
         }
     }
+
 }
 
 
@@ -258,7 +288,7 @@ function computerSolve() {
         else {
             let row = getRandomIndex(height);
             let column = getRandomIndex(width);
-            while (board[row][column].classList.contains('tiles-cleared') || minesConfirmed.has(row + '-' + column) && board[row][column].innerText === '🚩') {
+            while (board[row][column].classList.contains('tiles-cleared') || board[row][column].innerText === '🚩') {
                 row = getRandomIndex(height);
                 column = getRandomIndex(width);
             }
@@ -270,7 +300,11 @@ function computerSolve() {
             computerSolve(); // continue the loop
             for(const mineID of minesConfirmed) {
                 const [r,c] = mineID.split('-');
-                board[r][c].innerText = '🚩';
+                if(board[r][c].innerText === '') {
+                    board[r][c].innerText = '🚩';
+                    flag_count++;
+                }
+                document.getElementById('flag-count').innerText = flag_count;
             }
         }
         
@@ -293,3 +327,6 @@ function getSurroundingTiles(row,column) {
     });
     return surroundingTiles;
 }
+
+
+// might need to handle when tiles are being evaluated at lines 109-115, make the function async?
