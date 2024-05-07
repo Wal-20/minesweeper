@@ -27,15 +27,6 @@ body {
     box-sizing: border-box;
 }
 
-#flag-button {
-    width: 130px;
-    height: 50px;
-    font-size: 25px;
-    background-color: lightgray;
-    border: 2px solid darkgray;
-    cursor: pointer;
-}
-
 #restart-button, #computer-play {
     width: 170px;
     height: 50px;
@@ -95,5 +86,3 @@ body {
 .x8 { 
     color: gray;
 }
-
-

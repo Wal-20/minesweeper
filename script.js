@@ -1,11 +1,11 @@
 let board = [];
 const width = 30;
-const height = 16;
+const height = 16; // width should be divisible by height
 const board_width = (30 * width - 14) + 'px';
 const board_height = (30 * height) + 'px';
 
 let mine_locations = new Set();
-const mines_count = 40;
+const mines_count = 50;
 let flag_count = 0;
 
 let tilesClearedSet = new Set();
@@ -18,15 +18,9 @@ let tileScores = new Map(); // used to map each tile id with it's score, later u
 let safeTiles = [];
 
 const directions = [-1, 0, 1]; // used as offsets for tile positions
+const getRandomIndex = (max) => Math.floor(Math.random() * max);
 
-function getRandomIndex(max) {
-    return Math.floor(Math.random() * max);
-}
-
-window.onload = function() {
-    startGame();
-}
-
+window.onload = () => startGame();
 
 function startGame() {
     
@@ -34,16 +28,16 @@ function startGame() {
     document.querySelector('.board').style.height = board_height;
     document.getElementById('mines-count').innerHTML = mines_count;
     document.getElementById('flag-count').innerHTML = flag_count;
-    document.getElementById('computer-play').addEventListener('click',computerSolve);
+    document.getElementById('computer-play').addEventListener('click',solve);
     document.addEventListener('keydown', function(event) {
         if (event.key === 'c' || event.key === ' ') {
-            computerSolve();
+            solve();
         }
     });
     window.addEventListener('contextmenu',(event) => {
         event.preventDefault(); // Disable right-click context menu
     });
-
+    
     // populate the board
     for(let i = 0; i < height;i++){
         let row = [];
@@ -70,13 +64,15 @@ function startGame() {
                     document.getElementById('flag-count').innerHTML = flag_count;
                 }
             });
-
+            // toggle flag
+            
             document.querySelector('.board').append(tile);
             row.push(tile);
             tileScores.set(tile.id,0); // used to calculate adjacent bombs later
         }
         board.push(row);
     }
+    setMines();
 }
 
 
@@ -159,11 +155,6 @@ function checkMines(row,column) {
     // in case a flag is placed on the tile
 
     tilesClearedCount++;
-    
-    if(tilesClearedCount === 1) {
-        setMines();
-    }
-    
     let minesFound = 0;
     
     //check in all directions
@@ -227,11 +218,16 @@ function subtractScore(row, column) {
         
         const tileScore = tileScores.get(surroundingTileID);
         if(tileScore > 0) tileScores.set(surroundingTileID, tileScore - 1);
-        
+
+        if(tileScore === 1) {
+            const tile = document.getElementById(surroundingTileID);
+            tile.style.backgroundColor = 'aqua';
+        }
+                
         const [r,c] = surroundingTileID.split('-').map(Number);
         evaluateSurroundingTiles(r,c)
 
-        let surroundingTiles = new Set(getSurroundingTiles(r,c));
+        let surroundingTiles = new Set(getSurroundingTiles(r,c))
         surroundingTiles.delete(row,column);
 
         if(tileScores.get(surroundingTileID) === 0 && board[r][c].classList.contains('surrounded-by-mines')) {  // if after the subtraction a tile has a score of zero, all surrounding bombs are found, so all other tiles are safe
@@ -271,7 +267,7 @@ function evaluateSurroundingTiles(row, column) {
 }
 
 
-function computerSolve() {
+function solve() {
     if (game_over) return;
     
     setTimeout(() => {
@@ -297,7 +293,7 @@ function computerSolve() {
         }
 
         if (!game_over) {
-            computerSolve(); // continue the loop
+            solve(); // continue the loop
             for(const mineID of minesConfirmed) {
                 const [r,c] = mineID.split('-');
                 if(board[r][c].innerText === '') {
@@ -308,7 +304,7 @@ function computerSolve() {
             }
         }
         
-    }, 60);
+    }, 70);
 }
 
 
@@ -327,6 +323,3 @@ function getSurroundingTiles(row,column) {
     });
     return surroundingTiles;
 }
-
-
-// might need to handle when tiles are being evaluated at lines 109-115, make the function async?
