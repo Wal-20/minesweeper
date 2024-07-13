@@ -19,7 +19,7 @@ body {
 .board div {
     width: 29px;
     height: 29px;
-    border: 0.01px solid whitesmoke;
+    border: 1px solid whitesmoke;
     font-size: 18px;
     display: flex;
     justify-content: center;
@@ -45,6 +45,7 @@ body {
 
 #computer-play:hover, #restart-button:hover {
     background-color: darkgray;
+	border-color: lightgray;
 }
 
 .disabled {

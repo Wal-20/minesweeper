@@ -29,11 +29,13 @@ function startGame() {
     document.getElementById('mines-count').innerHTML = mines_count;
     document.getElementById('flag-count').innerHTML = flag_count;
     document.getElementById('computer-play').addEventListener('click',solve);
+
     document.addEventListener('keydown', function(event) {
-        if (event.key === 'c' || event.key === ' ') {
+        if (event.key === ' ' || event.key === 'Enter') {
             solve();
         }
     });
+	
     window.addEventListener('contextmenu',(event) => {
         event.preventDefault(); // Disable right-click context menu
     });
@@ -68,7 +70,7 @@ function startGame() {
             
             document.querySelector('.board').append(tile);
             row.push(tile);
-            tileScores.set(tile.id,0); // used to calculate adjacent bombs later
+            // tileScores.set(tile.id,0);
         }
         board.push(row);
     }
@@ -79,6 +81,7 @@ function startGame() {
 function setMines() {
 
     while (mine_locations.size < mines_count) {
+
         let row = getRandomIndex(height);
         let column = getRandomIndex(width);
         let mineLocation = row + '-' + column;
@@ -197,7 +200,7 @@ function checkMines(row,column) {
 }
 
 
-// ----------------------------------------------------------------------------- COMPUTER MOVE ----------------------------------------------------------------------------- //
+// ----------------------------------------------------------------------------- SOLVER ALGORITHM ----------------------------------------------------------------------------- //
 // AKA: recursion hell
 // we want to search the surrounding tiles for all uncleared tiles, if the score == surrounding uncleared tiles, we can confirm those tiles are mines
 
@@ -219,11 +222,6 @@ function subtractScore(row, column) {
         const tileScore = tileScores.get(surroundingTileID);
         if(tileScore > 0) tileScores.set(surroundingTileID, tileScore - 1);
 
-        if(tileScore === 1) {
-            const tile = document.getElementById(surroundingTileID);
-            tile.style.backgroundColor = 'aqua';
-        }
-                
         const [r,c] = surroundingTileID.split('-').map(Number);
         evaluateSurroundingTiles(r,c)
 
@@ -236,25 +234,27 @@ function subtractScore(row, column) {
                 let [surroundingRow,surroundingColumn] = tileID.split('-').map(Number);
                 if (!minesConfirmed.has(tileID) && !safeTiles.includes(tileID) && !board[surroundingRow][surroundingColumn].classList.contains('tiles-cleared')) 
                     safeTiles.push(tileID);
-            }
+            } 
         }
     }
 }
-// when a bomb is confirmed subtract 1 from the score of all surrounding cleared tiles
+// when a mine is confirmed subtract 1 from the score of all surrounding cleared tiles
 
 
-function evaluateSurroundingTiles(row, column) {
+
+// check whether tiles are safe, unsafe or contain mines according to their scores
+
+function evaluateSurroundingTiles(row, column) { 
     let unsafeTiles = new Set();
     const surroundingTiles = getSurroundingTiles(row,column);
+    const tileScore = tileScores.get(row + '-' + column);
 
     surroundingTiles.forEach((tileID) => {
         const [r,c] = tileID.split('-').map(Number);
-        if (!board[r][c].classList.contains('tiles-cleared')) {
+        if (!board[r][c].classList.contains('tiles-cleared') && !minesConfirmed.has(r + ' - ' + c)) {
             unsafeTiles.add(tileID);
         }
     });
-
-    const tileScore = tileScores.get(row + '-' + column);
 
     if (unsafeTiles.size === tileScore && tileScore > 0) {    // if number of surrounding uncleared tiles == the tile's score and that tile's score > 0
         // grab all surrounding uncleared tiles and add them to minesConfirmed
@@ -292,7 +292,6 @@ function solve() {
             clickTile(row, column);
         }
 
-        if (!game_over) {
             solve(); // continue the loop
             for(const mineID of minesConfirmed) {
                 const [r,c] = mineID.split('-');
@@ -302,7 +301,6 @@ function solve() {
                 }
                 document.getElementById('flag-count').innerText = flag_count;
             }
-        }
         
     }, 70);
 }
@@ -321,5 +319,6 @@ function getSurroundingTiles(row,column) {
             }
         });
     });
-    return surroundingTiles;
+
+	return surroundingTiles;
 }
