@@ -13,6 +13,7 @@ let tilesClearedCount = 0;
 let game_over = false;
 
 
+
 // solver specific variables
 let minesConfirmed = new Set(); // add discovered mines here
 let tileScores = new Map(); // used to map each tile id with it's score, later used for evaluating number of surrounding mines
@@ -321,6 +322,15 @@ function solve() {
             clickTile(row, column);
         }
 
+        solve(); // continue the loop
+        for(const mineID of minesConfirmed) {
+            const [r,c] = mineID.split('-');
+            if(board[r][c].innerText === '') {
+                board[r][c].innerText = '🚩';
+                flag_count++;
+            }
+            document.getElementById('flag-count').innerText = flag_count;
+        }
         solve(); // continue the loop
         for(const mineID of minesConfirmed) {
             const [r,c] = mineID.split('-');
