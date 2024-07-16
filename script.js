@@ -12,10 +12,13 @@ let tilesClearedSet = new Set();
 let tilesClearedCount = 0;
 let game_over = false;
 
+
 // solver specific variables
 let minesConfirmed = new Set(); // add discovered mines here
 let tileScores = new Map(); // used to map each tile id with it's score, later used for evaluating number of surrounding mines
 let safeTiles = [];
+let solverActive = false; // so solver activates only once
+
 
 const directions = [-1, 0, 1]; // used as offsets for tile positions
 const getRandomIndex = (max) => Math.floor(Math.random() * max);
@@ -28,10 +31,12 @@ function startGame() {
     document.querySelector('.board').style.height = board_height;
     document.getElementById('mines-count').innerHTML = mines_count;
     document.getElementById('flag-count').innerHTML = flag_count;
-    document.getElementById('computer-play').addEventListener('click',solve);
+    document.getElementById('computer-play').addEventListener('click', function() {
+		if(!solverActive) solve();
+	});
 
     document.addEventListener('keydown', function(event) {
-        if (event.key === ' ' || event.key === 'Enter') {
+        if (!solverActive && (event.key === ' ' || event.key === 'Enter')) {
             solve();
         }
     });
@@ -269,7 +274,8 @@ function evaluateSurroundingTiles(row, column) {
 
 function solve() {
     if (game_over) return;
-    
+	solverActive = true;
+
     setTimeout(() => {
 
         if (safeTiles.length > 0) {
@@ -292,15 +298,15 @@ function solve() {
             clickTile(row, column);
         }
 
-            solve(); // continue the loop
-            for(const mineID of minesConfirmed) {
-                const [r,c] = mineID.split('-');
-                if(board[r][c].innerText === '') {
-                    board[r][c].innerText = '🚩';
-                    flag_count++;
-                }
-                document.getElementById('flag-count').innerText = flag_count;
+        solve(); // continue the loop
+        for(const mineID of minesConfirmed) {
+            const [r,c] = mineID.split('-');
+            if(board[r][c].innerText === '') {
+                board[r][c].innerText = '🚩';
+                flag_count++;
             }
+            document.getElementById('flag-count').innerText = flag_count;
+        }
         
     }, 70);
 }
