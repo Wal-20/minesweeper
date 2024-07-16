@@ -12,10 +12,13 @@ let tilesClearedSet = new Set();
 let tilesClearedCount = 0;
 let game_over = false;
 
+
 // solver specific variables
 let minesConfirmed = new Set(); // add discovered mines here
 let tileScores = new Map(); // used to map each tile id with it's score, later used for evaluating number of surrounding mines
 let safeTiles = [];
+let solverActive = false; // so solver gets called only once
+
 
 const directions = [-1, 0, 1]; // used as offsets for tile positions
 const getRandomIndex = (max) => Math.floor(Math.random() * max);
@@ -28,11 +31,17 @@ function startGame() {
     document.querySelector('.board').style.height = board_height;
     document.getElementById('mines-count').innerHTML = mines_count;
     document.getElementById('flag-count').innerHTML = flag_count;
-    document.getElementById('computer-play').addEventListener('click',solve);
+    document.getElementById('computer-play').addEventListener('click', function() {
+		if(!solverActive) {
+			solverActive = true;
+			solve();
+		} 
+	});
 
     document.addEventListener('keydown', function(event) {
-        if (event.key === ' ' || event.key === 'Enter') {
-            solve();
+        if (!solverActive && (event.key === ' ' || event.key === 'Enter')) {
+			solverActive = true;
+			solve();
         }
     });
 	
@@ -204,6 +213,26 @@ function checkMines(row,column) {
 // AKA: recursion hell
 // we want to search the surrounding tiles for all uncleared tiles, if the score == surrounding uncleared tiles, we can confirm those tiles are mines
 
+
+
+function getSurroundingTiles(row,column) {
+    let surroundingTiles = [];
+
+    directions.forEach((rOffset) => {
+        directions.forEach((cOffset) => {
+            const r = row + rOffset;
+            const c = column + cOffset;
+
+            if (r >= 0 && r < height && c >= 0 && c < width) {
+                surroundingTiles.push(r + '-' + c);        
+            }
+        });
+    });
+
+	return surroundingTiles;
+}
+
+
 function subtractScore(row, column) {
 
     if(minesConfirmed.has(row + '-' + column)) return;
@@ -269,7 +298,7 @@ function evaluateSurroundingTiles(row, column) {
 
 function solve() {
     if (game_over) return;
-    
+
     setTimeout(() => {
 
         if (safeTiles.length > 0) {
@@ -292,33 +321,17 @@ function solve() {
             clickTile(row, column);
         }
 
-            solve(); // continue the loop
-            for(const mineID of minesConfirmed) {
-                const [r,c] = mineID.split('-');
-                if(board[r][c].innerText === '') {
-                    board[r][c].innerText = '🚩';
-                    flag_count++;
-                }
-                document.getElementById('flag-count').innerText = flag_count;
+        solve(); // continue the loop
+        for(const mineID of minesConfirmed) {
+            const [r,c] = mineID.split('-');
+            if(board[r][c].innerText === '') {
+                board[r][c].innerText = '🚩';
+                flag_count++;
             }
+            document.getElementById('flag-count').innerText = flag_count;
+        }
         
     }, 70);
 }
 
 
-function getSurroundingTiles(row,column) {
-    let surroundingTiles = [];
-
-    directions.forEach((rOffset) => {
-        directions.forEach((cOffset) => {
-            const r = row + rOffset;
-            const c = column + cOffset;
-
-            if (r >= 0 && r < height && c >= 0 && c < width) {
-                surroundingTiles.push(r + '-' + c);        
-            }
-        });
-    });
-
-	return surroundingTiles;
-}
